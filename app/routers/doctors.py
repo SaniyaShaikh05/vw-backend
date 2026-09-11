@@ -39,7 +39,12 @@ async def get_patients(
     current_user: User = Depends(get_current_doctor),
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(PatientProfile, User).join(User).where(PatientProfile.assigned_doctor_id == current_user.id)
+    query = select(PatientProfile, User).join(
+        User,
+        PatientProfile.user_id == User.id
+    ).where(
+        PatientProfile.assigned_doctor_id == current_user.id
+    )
     if search:
         query = query.where(User.full_name.ilike(f"%{search}%"))
         
@@ -64,11 +69,14 @@ async def get_patient_details(
     db: AsyncSession = Depends(get_db)
 ):
     prof_res = await db.execute(
-        select(PatientProfile, User).join(User).where(
-            PatientProfile.user_id == patient_id,
-            PatientProfile.assigned_doctor_id == current_user.id
-        )
+    select(PatientProfile, User).join(
+        User,
+        PatientProfile.user_id == User.id
+    ).where(
+        PatientProfile.user_id == patient_id,
+        PatientProfile.assigned_doctor_id == current_user.id
     )
+)
     res = prof_res.first()
     if not res:
         raise HTTPException(status_code=404, detail="Patient not found or not assigned to you")

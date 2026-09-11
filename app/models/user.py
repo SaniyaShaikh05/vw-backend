@@ -20,38 +20,82 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
-    patient_profile = relationship("PatientProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
-    doctor_profile = relationship("DoctorProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
+    patient_profile = relationship(
+        "PatientProfile",
+        back_populates="user",
+        foreign_keys="PatientProfile.user_id",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+
+    doctor_profile = relationship(
+        "DoctorProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
 
 
 class PatientProfile(Base):
     __tablename__ = "patient_profiles"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True
+    )
     height_cm = Column(Float)
     weight_kg = Column(Float)
     diabetes_type = Column(String(20))  # 'type1', 'type2', 'prediabetic', 'none'
     medications = Column(JSONB, default=list)
     emergency_contact = Column(String(255))
-    assigned_doctor_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    assigned_doctor_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=True
+    )
     glucose_min_threshold = Column(Float, default=70.0)
     glucose_max_threshold = Column(Float, default=180.0)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
     
-    user = relationship("User", back_populates="patient_profile", foreign_keys=[user_id])
-    assigned_doctor = relationship("User", foreign_keys=[assigned_doctor_id])
+    user = relationship(
+        "User",
+        back_populates="patient_profile",
+        foreign_keys=[user_id]
+    )
+
+    assigned_doctor = relationship(
+        "User",
+        foreign_keys=[assigned_doctor_id]
+    )
+
 
 class DoctorProfile(Base):
     __tablename__ = "doctor_profiles"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True
+    )
     specialization = Column(String(100))
     license_number = Column(String(100))
     hospital = Column(String(255))
     is_verified = Column(Boolean, default=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
     
-    user = relationship("User", back_populates="doctor_profile")
+    user = relationship(
+        "User",
+        back_populates="doctor_profile"
+    )

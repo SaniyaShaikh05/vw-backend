@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import timedelta
@@ -91,6 +92,30 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
         full_name=user.full_name,
         profile=profile_dict
     )
+@router.post("/swagger-login", include_in_schema=False)
+async def swagger_login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(User).where(User.email == form_data.username)
+    )
+    user = result.scalars().first()
+
+    if not user or not verify_password(form_data.password, user.password_hash):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect email or password"
+        )
+
+    access_token = create_access_token(
+        data={"user_id": str(user.id)}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
     
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(request: Request, db: AsyncSession = Depends(get_db)):
